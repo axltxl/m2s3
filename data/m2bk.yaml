@@ -25,6 +25,10 @@ mongodb:
 #  Default value: mongodump
 #  mongodump: "/usr/bin/mongodump"
 
+#  Max execution time of the mongodump executable used by m2bk
+#  Default value: 600
+#  mongodump_timeout: 600
+
 #  Directory where m2bk is going to temporarily save backup files
 #  Default value: /tmp/m2bk
 

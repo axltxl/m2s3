@@ -19,11 +19,11 @@ from .const import PKG_NAME
 # Constants
 #
 MONGODB_DEFAULT_MONGODUMP = "mongodump"
+MONGODB_DEFAULT_MONGODUMP_TIMEOUT = 600
 MONGODB_DEFAULT_USER = PKG_NAME
 MONGODB_DEFAULT_PWD = "pass"
 MONGODB_DEFAULT_PORT = 27017
 MONGODB_DEFAULT_AUTH = "admin"
-MONGODB_DEFAULT_TIMEOUT = 600
 
 
 def _set_mongodb_host_val(key, default, mongodb_host, mongodb_defaults):
@@ -58,6 +58,7 @@ def _merge_dbs(default_dbs, host_dbs):
 
 def make_backup_files(*,
                       mongodump=MONGODB_DEFAULT_MONGODUMP,
+                      mongodump_timeout=MONGODB_DEFAULT_MONGODUMP_TIMEOUT,
                       hosts={},
                       host_defaults={},
                       dry_run=False,
@@ -66,6 +67,7 @@ def make_backup_files(*,
     Backup all specified databases into a gzipped tarball via mongodump
 
     :param mongodump(str, optional): Path to mongodump executable
+    :param mongodump_timeout(int, optional): Max execution time of mongodump executable
     :param hosts(dict, optional): A dict containing hosts info to be backed up
     :param host_defaults(dict, optional): Default values applied to each host
     :param dry_run(bool, optional): Whether to activate dry run mode
@@ -79,6 +81,10 @@ def make_backup_files(*,
 
     # Type checks
     utils.chkstr(mongodump, 'mongodump')
+
+    # Check timeout
+    if type(mongodump_timeout) != int:
+        raise TypeError('mongodump timeout must be int')
 
     # List of mongodb hosts holding databases
     mongodb_hosts = hosts
@@ -120,8 +126,6 @@ def make_backup_files(*,
                               mongodb_host, mongodb_defaults)
         _set_mongodb_host_val('auth_db', MONGODB_DEFAULT_AUTH,
                               mongodb_host, mongodb_defaults)
-        _set_mongodb_host_val('timeout', MONGODB_DEFAULT_TIMEOUT,
-                              mongodb_host, mongodb_defaults)
 
         """Merge dbs list with that of the host_defaults section (if any)"""
         if 'dbs' in mongodb_defaults:
@@ -133,6 +137,7 @@ def make_backup_files(*,
 
         # Add the file name to the list to be returned
         mongodump_files[mongodb_host_name] = _make_backup_file(dry_run=dry_run, mongodump=mongodump,
+                                                               timeout=mongodump_timeout,
                                                                output_dir=output_dir, name=mongodb_host_name,
                                                                **mongodb_host)
     # .. and finally, give it
@@ -153,6 +158,9 @@ def _make_backup_file(**kwargs):
     # Path to the mongodump executable
     mongodump = kwargs.get('mongodump')
 
+    # Timeout for mongodump executable
+    timeout = kwargs.get('timeout')
+
     # Host and port
     address = kwargs.get('address')
     port = kwargs.get('port')
@@ -167,8 +175,6 @@ def _make_backup_file(**kwargs):
     name = kwargs.get('name')
     # auth_db
     auth_db = kwargs.get('auth_db')
-    # max execution time
-    timeout = kwargs.get('timeout')
 
     # Type checks
     utils.chkstr(name, 'name')
@@ -191,10 +197,6 @@ def _make_backup_file(**kwargs):
         if type(db) != str:
             raise TypeError('all values within dbs must be str')
 
-    # Check timeout
-    if type(timeout) != int:
-        raise TypeError('timeout must be int')
-
     # The mongodump directory is going to have a name indicating
     # the UNIX timestamp corresponding to the current creation time
     out_dir = fs.make_tmp_dir("mongodump-{name}".format(name=name))
@@ -207,8 +209,8 @@ def _make_backup_file(**kwargs):
     return fs.make_tarball(out_dir)
 
 
-def _mongodump_exec(mongodump, address, port, user, passwd, db,
-                    out_dir, auth_db, timeout, dry_run):
+def _mongodump_exec(mongodump, address, port, user, passwd,
+                    db, out_dir, auth_db, timeout, dry_run):
     """
     Run mongodump on a database
 
@@ -219,8 +221,8 @@ def _mongodump_exec(mongodump, address, port, user, passwd, db,
     :param db: database name
     :param out_dir: output directory
     :param auth_db: authentication database
-    :param timeout: max execution time of mongodump
     :param dry_run: dry run mode
+    :param timeout: max execution time of mongodump executable
     :raises OSError: if mongodump process returns error
     """
 

@@ -199,6 +199,7 @@ The following is an example of what a configuration file looks like:
     output_dir: "/opt/tmp/mydir"
   mongodb:
     mongodump: "/opt/bin/mongodump"
+    mongodump_timeout: 600
     host_defaults:
       port: 666
       user_name: "satan"
@@ -253,6 +254,7 @@ to connect to, including databases that are going to be backed up through *mongo
 
     mongodb:
         mongodump: "/opt/bin/mongodump"
+        mongodump_timeout: 600
         host_defaults:
             user_name: tom
             address: db.example.local
@@ -291,6 +293,14 @@ Directives
 -  Type: **string**
 -  Default value : ``mongodump``
 -  Role: full path to the ``mongodump`` executable used by m2bk
+
+``mongodb.mongodump_timeout``
+"""""""""""""""""""""
+
+-  Type: **integer**
+-  Required: NO
+-  Default value : ``600``
+-  Role: Max execution time of the ``mongodump`` executable used by m2bk
 
 ``mongodb.host_defaults`` section
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
